@@ -2,122 +2,209 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-const posts = await getCollection('blog');
-// Sort by date descending
-posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const allPosts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
 
-// Extract unique categories
-const allCategories = ['সব', ...new Set(posts.flatMap(post => post.data.categories))];
+const categoryCounts: Record<string, number> = {};
+for (const post of allPosts) {
+  categoryCounts[post.data.category] = (categoryCounts[post.data.category] || 0) + 1;
+}
+const categories = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]);
 
-// Bengali Date Formatter
-const formatDate = (date: Date) => {
-	return new Intl.DateTimeFormat('bn-BD', {
-		day: 'numeric',
-		month: 'long',
-		year: 'numeric'
-	}).format(date);
-};
+function toBanglaNumber(num: number) {
+  const digits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+  return String(num)
+    .split('')
+    .map((d) => digits[+d] ?? d)
+    .join('');
+}
+
+function formatBanglaDate(date: Date) {
+  const months = [
+    'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
+    'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর',
+  ];
+  return toBanglaNumber(date.getDate()) + ' ' + months[date.getMonth()] + ', ' + toBanglaNumber(date.getFullYear());
+}
 ---
 
-<Layout title="চিন্তা, বিশ্বাস ও কর্ম | Mohammad Abdul Haque">
-	
-	<!-- Hero Section -->
-	<div class="text-center max-w-2xl mx-auto mb-12">
-		<h2 class="text-amber-600 text-sm font-semibold mb-2">ব্যক্তিগত জার্নাল</h2>
-		<h1 class="text-4xl md:text-5xl font-bold text-white mb-6">চিন্তা, বিশ্বাস ও কর্ম</h1>
-		<p class="text-gray-400 leading-relaxed">
-			আসসালামু আলাইকুম। আমি মোহাম্মদ আবদুল হক। এখানে বাংলা, আরবি ও মাঝেমাঝে ইংরেজিতে লিখি—যা ভাবি, যা পড়ি, যা শিখি।
-		</p>
-		<div class="w-16 h-px bg-gray-700 mx-auto mt-6"></div>
-	</div>
+<Layout>
+  <section class="max-w-3xl mx-auto px-5 pt-16 pb-10 text-center">
+    <p class="text-gold text-sm font-semibold mb-3">বাতিঘর জানাল</p>
+    <h1 class="font-serifBengali text-4xl sm:text-5xl font-bold text-paper mb-4">
+      চিন্তা, বিশ্বাস ও কর্ম
+    </h1>
+    <p class="text-muted leading-relaxed">
+      আসসালামু আলাইকুম। আমি মোহাম্মদ আব্দুল হক। এখানে বাংলা, আরবি ও মাঝেমধ্যে
+      ইংরেজিতে লিখি — যা ভাবি, যা পড়ি, যা শিখি।
+    </p>
+  </section>
 
-	<!-- Search Bar -->
-	<div class="max-w-xl mx-auto mb-6 relative">
-		<svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-		</svg>
-		<input 
-			type="text" 
-			placeholder="লেখা খুঁজুন—শিরোনাম বা ভেতরের যেকোনো শব্দ..." 
-			class="w-full bg-[#1c1c1c] border border-gray-800 text-white rounded-full py-3 pl-12 pr-4 focus:outline-none focus:border-amber-500 transition-colors placeholder-gray-600"
-		/>
-	</div>
+  <div class="max-w-3xl mx-auto px-5">
+    <div class="relative">
+      <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input
+        id="search-input"
+        type="text"
+        placeholder="লেখা খুঁজুন — শিরোনাম বা ভেতরের যেকোনো শব্দ..."
+        class="w-full bg-inkElevated border border-linec rounded-full py-3 pl-11 pr-11 text-sm text-paper placeholder:text-muted focus:outline-none focus:border-gold transition-colors"
+      />
+      <button id="search-clear" type="button" class="hidden absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-paper text-sm">
+        ✕
+      </button>
+    </div>
+  </div>
 
-	<!-- Category Pills -->
-	<div class="flex flex-wrap justify-center gap-3 mb-8 max-w-3xl mx-auto">
-		{allCategories.map((cat, index) => (
-			<button class={`px-4 py-1.5 rounded-full text-sm border transition-colors ${
-				index === 0 
-				? 'bg-amber-600 text-white border-amber-600' 
-				: 'bg-[#1c1c1c] text-gray-400 border-gray-800 hover:border-gray-600'
-			}`}>
-				{cat}
-			</button>
-		))}
-	</div>
+  <div class="max-w-3xl mx-auto px-5 mt-5 flex flex-wrap justify-center gap-2">
+    <button class="cat-pill active-pill" data-category="সব">
+      সব {toBanglaNumber(allPosts.length)}
+    </button>
+    {categories.map(([cat, count]) => (
+      <button class="cat-pill" data-category={cat}>
+        {cat} {toBanglaNumber(count)}
+      </button>
+    ))}
+  </div>
 
-	<!-- View Toggle Controls -->
-	<div class="flex justify-end mb-6 border-b border-gray-800 pb-4">
-		<button id="view-toggle-btn" class="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
-			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-			</svg>
-			<span>ভিউ পরিবর্তন করুন</span>
-		</button>
-	</div>
+  <div class="max-w-5xl mx-auto px-5 mt-10 flex items-center justify-between" id="posts">
+    <h2 data-section-title class="font-serifBengali text-xl font-semibold text-paper border-b-2 border-gold pb-1">
+      সকল লেখা
+    </h2>
+    <div class="flex items-center gap-1 border border-linec rounded-full p-1">
+      <button id="view-list-btn" class="view-btn active" aria-label="তালিকা দেখুন">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4">
+          <line x1="4" y1="6" x2="20" y2="6"></line>
+          <line x1="4" y1="12" x2="20" y2="12"></line>
+          <line x1="4" y1="18" x2="20" y2="18"></line>
+        </svg>
+      </button>
+      <button id="view-gallery-btn" class="view-btn" aria-label="গ্যালারি দেখুন">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4">
+          <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+      </button>
+    </div>
+  </div>
 
-	<!-- VIEW A: List View -->
-	<div id="list-view" class="max-w-3xl mx-auto space-y-10 block">
-		{posts.map((post) => (
-			<article class="border-b border-gray-800 pb-8 last:border-0">
-				<div class="flex items-center gap-3 text-xs mb-3">
-					{post.data.categories.map(cat => (
-						<span class="px-2 py-1 rounded-full border border-amber-700/50 text-amber-500">{cat}</span>
-					))}
-					<span class="text-gray-500">{formatDate(post.data.date)}</span>
-				</div>
-				<a href={`/blog/${post.slug}`}>
-					<h3 class="text-2xl font-bold text-white mb-3 hover:text-amber-500 transition-colors">{post.data.title}</h3>
-				</a>
-				<p class="text-gray-400 mb-4 line-clamp-2 leading-relaxed">{post.data.excerpt}</p>
-				<a href={`/blog/${post.slug}`} class="text-amber-600 text-sm hover:text-amber-500 flex items-center gap-1">
-					পড়ুন <span class="text-lg">→</span>
-				</a>
-			</article>
-		))}
-	</div>
+  <!-- LIST VIEW -->
+  <section id="list-view" class="max-w-3xl mx-auto px-5 mt-4 divide-y divide-linec">
+    {allPosts.map((post) => (
+      <article
+        class="post-card py-8"
+        data-category={post.data.category}
+        data-search={(post.data.title + ' ' + post.data.excerpt).toLowerCase()}
+      >
+        <div class="flex items-center gap-2 mb-3">
+          <span class="badge">{post.data.lang}</span>
+          <span class="badge badge-accent">{post.data.category}</span>
+          <span class="text-muted text-xs">{formatBanglaDate(post.data.date)}</span>
+        </div>
+        <h3 class="font-serifBengali text-2xl font-bold text-paper mb-2 leading-snug">
+          <a href={"/blog/" + post.slug} class="hover:text-gold transition-colors">
+            {post.data.title}
+          </a>
+        </h3>
+        <p class="text-muted leading-relaxed mb-3">{post.data.excerpt}</p>
+        <a href={"/blog/" + post.slug} class="text-gold text-sm font-medium hover:underline">
+          পড়ুন →
+        </a>
+      </article>
+    ))}
+  </section>
 
-	<!-- VIEW B: Gallery View -->
-	<div id="gallery-view" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 hidden">
-		{posts.map((post) => (
-			<a href={`/blog/${post.slug}`} class="block group">
-				<div class="bg-[#1c1c1c] rounded-xl overflow-hidden border border-gray-800 hover:border-gray-600 transition-colors h-full flex flex-col">
-					<div class="p-5 flex-grow">
-						<p class="text-gray-300 text-sm leading-relaxed line-clamp-6">{post.data.excerpt}</p>
-					</div>
-					<div class="px-5 py-3 border-t border-gray-800 bg-[#161616] flex items-center gap-2">
-						<svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-						</svg>
-						<span class="text-xs font-medium text-gray-400 truncate group-hover:text-amber-500 transition-colors">{post.data.title}</span>
-					</div>
-				</div>
-			</a>
-		))}
-	</div>
+  <!-- GALLERY VIEW -->
+  <section id="gallery-view" class="hidden max-w-6xl mx-auto px-5 mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-10">
+    {allPosts.map((post) => (
+      
+        href={"/blog/" + post.slug}
+        class="post-card block bg-inkElevated border border-linec rounded-xl p-5 hover:border-gold transition-colors flex flex-col justify-between min-h-[220px]"
+        data-category={post.data.category}
+        data-search={(post.data.title + ' ' + post.data.excerpt).toLowerCase()}
+      >
+        <p class="text-sm text-muted leading-relaxed line-clamp-6">{post.data.excerpt}</p>
+        <div class="flex items-center gap-2 mt-4 pt-3 border-t border-linec">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 shrink-0 text-gold">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <path d="M14 2v6h6"></path>
+          </svg>
+          <span class="text-gold text-sm font-medium truncate">{post.data.title}</span>
+        </div>
+      </a>
+    ))}
+  </section>
 
+  <p id="no-results" class="hidden text-center text-muted py-16">কোনো লেখা পাওয়া যায়নি।</p>
 </Layout>
 
 <script>
-	// Vanilla JS View Toggle Logic
-	const toggleBtn = document.getElementById('view-toggle-btn');
-	const listView = document.getElementById('list-view');
-	const galleryView = document.getElementById('gallery-view');
+  const searchInput = document.getElementById('search-input') as HTMLInputElement;
+  const searchClear = document.getElementById('search-clear') as HTMLElement;
+  const catButtons = document.querySelectorAll<HTMLElement>('.cat-pill');
+  const postCards = document.querySelectorAll<HTMLElement>('.post-card');
+  const noResults = document.getElementById('no-results') as HTMLElement;
+  const sectionTitle = document.querySelector('[data-section-title]') as HTMLElement;
+  const viewListBtn = document.getElementById('view-list-btn') as HTMLElement;
+  const viewGalleryBtn = document.getElementById('view-gallery-btn') as HTMLElement;
+  const listView = document.getElementById('list-view') as HTMLElement;
+  const galleryView = document.getElementById('gallery-view') as HTMLElement;
 
-	if (toggleBtn && listView && galleryView) {
-		toggleBtn.addEventListener('click', () => {
-			listView.classList.toggle('hidden');
-			galleryView.classList.toggle('hidden');
-		});
-	}
+  let activeCategory = 'সব';
+  let searchTerm = '';
+
+  function applyFilters() {
+    let visibleCount = 0;
+    postCards.forEach((card) => {
+      const matchesCategory = activeCategory === 'সব' || card.dataset.category === activeCategory;
+      const matchesSearch = !searchTerm || (card.dataset.search || '').includes(searchTerm);
+      const visible = matchesCategory && matchesSearch;
+      card.classList.toggle('hidden', !visible);
+      if (visible) visibleCount++;
+    });
+    noResults.classList.toggle('hidden', visibleCount > 0);
+  }
+
+  catButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      activeCategory = btn.dataset.category || 'সব';
+      catButtons.forEach((b) => b.classList.remove('active-pill'));
+      btn.classList.add('active-pill');
+      sectionTitle.textContent = activeCategory === 'সব' ? 'সকল লেখা' : activeCategory;
+      applyFilters();
+    });
+  });
+
+  searchInput.addEventListener('input', (e) => {
+    searchTerm = (e.target as HTMLInputElement).value.trim().toLowerCase();
+    searchClear.classList.toggle('hidden', !searchTerm);
+    applyFilters();
+  });
+
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    searchTerm = '';
+    searchClear.classList.add('hidden');
+    applyFilters();
+  });
+
+  function setView(view: 'list' | 'gallery') {
+    const isList = view === 'list';
+    listView.classList.toggle('hidden', !isList);
+    galleryView.classList.toggle('hidden', isList);
+    viewListBtn.classList.toggle('active', isList);
+    viewGalleryBtn.classList.toggle('active', !isList);
+    localStorage.setItem('viewMode', view);
+  }
+
+  viewListBtn.addEventListener('click', () => setView('list'));
+  viewGalleryBtn.addEventListener('click', () => setView('gallery'));
+
+  const savedView = localStorage.getItem('viewMode');
+  if (savedView === 'gallery') setView('gallery');
 </script>
