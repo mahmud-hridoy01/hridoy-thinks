@@ -1,0 +1,47 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  return posts.map((post) => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await post.render();
+
+function toBanglaNumber(num: number) {
+  const digits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+  return String(num).split('').map((d) => digits[+d] ?? d).join('');
+}
+function formatBanglaDate(date: Date) {
+  const months = [
+    'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
+    'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর',
+  ];
+  return `${toBanglaNumber(date.getDate())} ${months[date.getMonth()]}, ${toBanglaNumber(date.getFullYear())}`;
+}
+---
+
+<Layout title={`${post.data.title} — Mohammad Abdul Haque`} description={post.data.excerpt}>
+  <article class="max-w-2xl mx-auto px-5 py-14">
+    <a href="/" class="text-gold text-sm hover:underline">← সব লেখায় ফিরে যান</a>
+
+    <div class="flex items-center gap-2 mt-6 mb-3">
+      <span class="badge">{post.data.lang}</span>
+      <span class="badge badge-accent">{post.data.category}</span>
+      <span class="text-muted text-xs">{formatBanglaDate(post.data.date)}</span>
+    </div>
+
+    <h1 class="font-serifBengali text-3xl sm:text-4xl font-bold text-paper mb-8 leading-snug">
+      {post.data.title}
+    </h1>
+
+    <div class="prose prose-invert prose-headings:font-serifBengali prose-headings:text-paper prose-p:text-paper prose-li:text-paper prose-strong:text-paper prose-a:text-gold prose-blockquote:text-muted prose-blockquote:border-gold max-w-none font-bengali leading-loose">
+      <Content />
+    </div>
+  </article>
+</Layout>
