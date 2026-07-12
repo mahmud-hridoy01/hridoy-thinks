@@ -122,12 +122,7 @@ function formatBanglaDate(date: Date) {
   <!-- GALLERY VIEW -->
   <section id="gallery-view" class="hidden max-w-6xl mx-auto px-5 mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-10">
     {allPosts.map((post) => (
-      
-        href={"/blog/" + post.slug}
-        class="post-card block bg-inkElevated border border-linec rounded-xl p-5 hover:border-gold transition-colors flex flex-col justify-between min-h-[220px]"
-        data-category={post.data.category}
-        data-search={(post.data.title + ' ' + post.data.excerpt).toLowerCase()}
-      >
+      <a href={"/blog/" + post.slug} class="post-card block bg-inkElevated border border-linec rounded-xl p-5 hover:border-gold transition-colors flex flex-col justify-between min-h-[220px]" data-category={post.data.category} data-search={(post.data.title + ' ' + post.data.excerpt).toLowerCase()}>
         <p class="text-sm text-muted leading-relaxed line-clamp-6">{post.data.excerpt}</p>
         <div class="flex items-center gap-2 mt-4 pt-3 border-t border-linec">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 shrink-0 text-gold">
