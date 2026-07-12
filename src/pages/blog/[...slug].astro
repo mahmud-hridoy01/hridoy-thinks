@@ -22,11 +22,13 @@ function formatBanglaDate(date: Date) {
     'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
     'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর',
   ];
-  return `${toBanglaNumber(date.getDate())} ${months[date.getMonth()]}, ${toBanglaNumber(date.getFullYear())}`;
+  return toBanglaNumber(date.getDate()) + ' ' + months[date.getMonth()] + ', ' + toBanglaNumber(date.getFullYear());
 }
+
+const pageTitle = post.data.title + ' — Mohammad Abdul Haque';
 ---
 
-<Layout title={`${post.data.title} — Mohammad Abdul Haque`} description={post.data.excerpt}>
+<Layout title={pageTitle} description={post.data.excerpt}>
   <article class="max-w-2xl mx-auto px-5 py-14">
     <a href="/" class="text-gold text-sm hover:underline">← সব লেখায় ফিরে যান</a>
 
